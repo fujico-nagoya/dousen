@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ユーザー導線設計図</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel (JSXをブラウザで変換するため) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons (アイコン描画用) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useRef, useEffect, useState, Fragment } = React;
+
+    // --- アイコンコンポーネントの準備 (lucide-reactの代用) ---
+    const IconWrapper = ({ iconName, size = 24, strokeWidth = 2, className = '' }) => {
+      const icon = lucide.icons[iconName];
+      if (!icon) return null;
+      const svgString = icon.toSvg({ 
+        width: size, 
+        height: size, 
+        'stroke-width': strokeWidth, 
+        class: className 
+      });
+      return <span className="flex items-center justify-center" dangerouslySetInnerHTML={{ __html: svgString }} />;
+    };
+
+    const Search = (props) => <IconWrapper iconName="search" {...props} />;
+    const Users = (props) => <IconWrapper iconName="users" {...props} />;
+    const Globe = (props) => <IconWrapper iconName="globe" {...props} />;
+    const FileText = (props) => <IconWrapper iconName="fileText" {...props} />;
+    const MousePointerClick = (props) => <IconWrapper iconName="mousePointerClick" {...props} />;
+    const Calculator = (props) => <IconWrapper iconName="calculator" {...props} />;
+    const Building = (props) => <IconWrapper iconName="building" {...props} />;
+    const Send = (props) => <IconWrapper iconName="send" {...props} />;
+    const User = (props) => <IconWrapper iconName="user" {...props} />;
+    const ExternalLink = (props) => <IconWrapper iconName="externalLink" {...props} />;
+
+    // --- メインコンポーネント ---
+    const TextWithBr = ({ text }) => (
+      <Fragment>
+        {text.split('\n').map((line, i) => (
+          <Fragment key={i}>
+            {line}
+            {i !== text.split('\n').length - 1 && <br />}
+          </Fragment>
+        ))}
+      </Fragment>
+    );
+
+    function App() {
+      const containerRef = useRef(null);
+      const refs = useRef({});
+      const [coordsUpdated, setCoordsUpdated] = useState(0);
+
+      const setRef = (id, el) => {
+        if (el && refs.current[id] !== el) {
+          refs.current[id] = el;
+        }
+      };
+
+      useEffect(() => {
+        if (!containerRef.current) return;
+        
+        const observer = new ResizeObserver(() => {
+          setCoordsUpdated(c => c + 1);
+        });
+        
+        observer.observe(containerRef.current);
+        
+        const timer = setTimeout(() => setCoordsUpdated(c => c + 1), 100);
+        
+        return () => {
+          observer.disconnect();
+          clearTimeout(timer);
+        };
+      }, []);
+
+      const getAnchor = (id, position) => {
+        const el = refs.current[id];
+        const container = containerRef.current;
+        if (!el || !container) return null;
+
+        const rect = el.getBoundingClientRect();
+        const parentRect = container.getBoundingClientRect();
+
+        const xOffset = rect.left - parentRect.left;
+        const yOffset = rect.top - parentRect.top;
+
+        switch(position) {
+          case 'right': return { x: xOffset + rect.width, y: yOffset + rect.height / 2 };
+          case 'left': return { x: xOffset, y: yOffset + rect.height / 2 };
+          case 'bottom': return { x: xOffset + rect.width / 2, y: yOffset + rect.height };
+          case 'top': return { x: xOffset + rect.width / 2, y: yOffset };
+          default: return { x: xOffset + rect.width / 2, y: yOffset + rect.height / 2 };
+        }
+      };
+
+      const nodes = [
+        { id: 'n1_1', num: '①-1', title: 'WEB検索', desc: '受水槽 更新\n受水槽 メンテナンスなど', icon: Search, col: 1, row: 1, color: 'text-sky-600', borderColor: 'border-sky-300', bg: 'bg-sky-50', iconBg: 'bg-sky-100' },
+        { id: 'n1_2', num: '①-2', title: '対面営業', desc: 'リーフレット\n× QRコード', icon: Users, col: 1, row: 3, color: 'text-purple-600', borderColor: 'border-purple-300', bg: 'bg-purple-50', iconBg: 'bg-purple-100' },
+        { id: 'n2', num: '②', title: 'フジコー\nホームページ', desc: 'トップページ・各コンテンツ', icon: Globe, col: 2, row: 2, color: 'text-indigo-600', borderColor: 'border-indigo-300', bg: 'bg-indigo-50', iconBg: 'bg-indigo-100', url: 'https://www.e-fujico.com/' },
+        { id: 'n3', num: '③', title: '直結給水化\n紹介ページ', desc: 'サービスの詳細説明', icon: FileText, col: 3, row: 2, color: 'text-blue-600', borderColor: 'border-blue-300', bg: 'bg-blue-50', iconBg: 'bg-blue-100', url: 'https://www.e-fujico.com/apartment-owners/' },
+        { id: 'n4', num: '④', title: 'シミュレート\n紹介ページ', desc: 'ご自身の属性を選択', icon: MousePointerClick, col: 4, row: 2, color: 'text-teal-600', borderColor: 'border-teal-300', bg: 'bg-teal-50', iconBg: 'bg-teal-100', hasChoices: true, url: 'https://fujico-nagoya.github.io/f-portal/' },
+        { id: 'n5_1', num: '⑤-1', title: '無料シミュレーター', desc: 'マンションオーナー向け', icon: Calculator, col: 5, row: 1, color: 'text-emerald-600', borderColor: 'border-emerald-300', bg: 'bg-emerald-50', iconBg: 'bg-emerald-100' },
+        { id: 'n5_2', num: '⑤-2', title: '問い合わせフォーム', desc: '管理会社向け', icon: Building, col: 5, row: 3, color: 'text-orange-600', borderColor: 'border-orange-300', bg: 'bg-orange-50', iconBg: 'bg-orange-100' },
+        { id: 'n6', num: '⑥', title: 'シミュレーターを\n送る', desc: '管理会社からオーナーへ', icon: Send, col: 6, row: 3, color: 'text-rose-600', borderColor: 'border-rose-300', bg: 'bg-rose-50', iconBg: 'bg-rose-100' },
+      ];
+
+      const edges = [
+        { from: 'n1_1', fromPos: 'right', to: 'n2', toPos: 'left', type: 'curve', color: '#94a3b8' },
+        { from: 'n1_2', fromPos: 'right', to: 'n2', toPos: 'left', type: 'curve', color: '#94a3b8' },
+        { from: 'n2', fromPos: 'right', to: 'n3', toPos: 'left', type: 'straight', color: '#94a3b8' },
+        { from: 'n3', fromPos: 'right', to: 'n4', toPos: 'left', type: 'straight', color: '#94a3b8' },
+        { from: 'n4_owner', fromPos: 'right', to: 'n5_1', toPos: 'left', type: 'curve', color: '#10b981' }, 
+        { from: 'n4_admin', fromPos: 'right', to: 'n5_2', toPos: 'left', type: 'curve', color: '#f97316' }, 
+        { from: 'n5_2', fromPos: 'right', to: 'n6', toPos: 'left', type: 'straight', color: '#f97316' },
+        { from: 'n1_2', fromPos: 'bottom', to: 'n6', toPos: 'bottom', type: 'ushape', color: '#a855f7', dashed: true, label: 'QRコードから直接アクセス' }, 
+      ];
+
+      const uniqueColors = [...new Set(edges.map(e => e.color))];
+
+      const colClasses = {
+        1: 'col-start-1', 2: 'col-start-2', 3: 'col-start-3', 4: 'col-start-4', 5: 'col-start-5', 6: 'col-start-6'
+      };
+      const rowClasses = {
+        1: 'row-start-1', 2: 'row-start-2', 3: 'row-start-3'
+      };
+
+      const renderPath = (edge, idx) => {
+        const start = getAnchor(edge.from, edge.fromPos);
+        const end = getAnchor(edge.to, edge.toPos);
+        if (!start || !end) return null;
+
+        let d = '';
+
+        if (edge.type === 'straight') {
+          d = `M ${start.x} ${start.y} L ${end.x - 3} ${end.y}`;
+        } else if (edge.type === 'curve') {
+          const cX = (start.x + end.x) / 2;
+          d = `M ${start.x} ${start.y} C ${cX} ${start.y}, ${cX} ${end.y}, ${end.x - 3} ${end.y}`;
+        } else if (edge.type === 'ushape') {
+          const yOffset = 50; 
+          const bottomY = Math.max(start.y, end.y) + yOffset;
+          const radius = 15; 
+          
+          d = `M ${start.x} ${start.y} 
+               L ${start.x} ${bottomY - radius}
+               A ${radius} ${radius} 0 0 0 ${start.x + radius} ${bottomY}
+               L ${end.x - radius} ${bottomY}
+               A ${radius} ${radius} 0 0 0 ${end.x} ${bottomY - radius}
+               L ${end.x} ${end.y + 12}`;
+        }
+
+        const markerId = `url(#arrow-${edge.color.replace('#', '')})`;
+
+        return (
+          <path 
+            key={`path-${idx}`}
+            d={d} 
+            fill="none" 
+            stroke={edge.color} 
+            strokeWidth="3" 
+            strokeDasharray={edge.dashed ? "6 6" : "none"}
+            markerEnd={markerId}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="transition-all duration-300 ease-in-out opacity-90"
+          />
+        );
+      };
+
+      return (
+        <div className="w-full min-h-screen p-4 sm:p-8 overflow-x-auto font-sans flex flex-col items-center relative bg-slate-50">
+          
+          <div 
+            className="absolute inset-0 opacity-[0.04] pointer-events-none z-0" 
+            style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }}
+          ></div>
+          
+          <div className="mb-8 text-center relative z-10">
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight drop-shadow-sm">ユーザー導線設計図</h1>
+            <p className="text-slate-500 mt-2 font-bold text-sm">直結工事案内、全体導線設計</p>
+          </div>
+
+          <div className="min-w-[1024px] w-full max-w-[1200px] relative pb-20" ref={containerRef}>
+            
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
+              <defs>
+                {uniqueColors.map(color => (
+                  <marker key={color} id={`arrow-${color.replace('#', '')}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+                    <path d="M 0 1 L 10 5 L 0 9 z" fill={color} />
+                  </marker>
+                ))}
+              </defs>
+              {edges.map((edge, idx) => renderPath(edge, idx))}
+            </svg>
+
+            {edges.map((edge, idx) => {
+              if (edge.type !== 'ushape' || !edge.label) return null;
+              const start = getAnchor(edge.from, edge.fromPos);
+              const end = getAnchor(edge.to, edge.toPos);
+              if (!start || !end) return null;
+              
+              const bottomY = Math.max(start.y, end.y) + 50;
+              return (
+                <div 
+                  key={`label-${idx}`}
+                  className="absolute text-[11px] font-extrabold px-3 py-1.5 bg-white border-2 rounded-full shadow-lg z-30 whitespace-nowrap flex items-center gap-1.5"
+                  style={{
+                    left: (start.x + end.x) / 2,
+                    top: bottomY,
+                    transform: 'translate(-50%, -50%)',
+                    color: edge.color,
+                    borderColor: edge.color
+                  }}
+                >
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: edge.color }}></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: edge.color }}></span>
+                  </span>
+                  {edge.label}
+                </div>
+              );
+            })}
+
+            <div className="grid grid-cols-6 grid-rows-3 gap-x-6 gap-y-10 relative z-10 w-full">
+              {nodes.map(node => {
+                const IconComponent = node.icon;
+                const isLink = !!node.url;
+                const Component = isLink ? 'a' : 'div';
+
+                return (
+                  <Component 
+                    key={node.id}
+                    ref={el => setRef(node.id, el)}
+                    href={node.url}
+                    target={isLink ? "_blank" : undefined}
+                    rel={isLink ? "noopener noreferrer" : undefined}
+                    className={`${colClasses[node.col]} ${rowClasses[node.row]} block flex flex-col p-3 rounded-xl shadow-md border-2 ${node.bg} ${node.borderColor} w-[170px] h-auto self-center mx-auto transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isLink ? 'cursor-pointer hover:brightness-95' : ''}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-md bg-white shadow-sm border ${node.borderColor} ${node.color}`}>
+                        {node.num}
+                      </span>
+                      <div className="flex gap-1 items-start">
+                        {isLink && (
+                          <div className={`mt-0.5 mr-0.5 ${node.color} opacity-60`} title="別タブで開く">
+                            <ExternalLink size={14} strokeWidth={2.5} />
+                          </div>
+                        )}
+                        <div className={`p-2.5 rounded-full shadow-sm border border-white/50 ${node.iconBg} ${node.color}`}>
+                          <IconComponent size={26} strokeWidth={2} />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h3 className={`font-extrabold text-[14px] leading-snug mb-2 ${node.color} text-center`}>
+                      <TextWithBr text={node.title} />
+                    </h3>
+                    
+                    {node.desc && (
+                      <div className="bg-white/80 p-1.5 rounded-lg mt-auto shadow-sm border border-white">
+                        <p className="text-[11px] text-slate-600 leading-relaxed font-bold text-center">
+                          <TextWithBr text={node.desc} />
+                        </p>
+                      </div>
+                    )}
+
+                    {node.hasChoices && (
+                      <div className="flex flex-col gap-1.5 w-full mt-3 pt-3 border-t-2 border-slate-200/50">
+                        <div 
+                          ref={el => setRef('n4_owner', el)} 
+                          className="text-[10px] bg-emerald-50 text-emerald-800 py-1.5 px-2 rounded-lg font-bold border-2 border-emerald-200 flex items-center justify-between relative shadow-sm hover:bg-emerald-100 transition-colors cursor-default whitespace-nowrap"
+                        >
+                          <div className="flex items-center gap-1">
+                            <User size={12} strokeWidth={2.5} />
+                            <span>マンションオーナー</span>
+                          </div>
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 border border-white shadow-sm flex-shrink-0"></div>
+                        </div>
+                        <div 
+                          ref={el => setRef('n4_admin', el)} 
+                          className="text-[10px] bg-orange-50 text-orange-800 py-1.5 px-2 rounded-lg font-bold border-2 border-orange-200 flex items-center justify-between relative shadow-sm hover:bg-orange-100 transition-colors cursor-default whitespace-nowrap"
+                        >
+                          <div className="flex items-center gap-1">
+                            <Building size={12} strokeWidth={2.5} />
+                            <span>管理会社</span>
+                          </div>
+                          <div className="w-2 h-2 rounded-full bg-orange-500 border border-white shadow-sm flex-shrink-0"></div>
+                        </div>
+                      </div>
+                    )}
+                  </Component>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
